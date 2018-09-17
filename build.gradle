@@ -1,0 +1,80 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url "https://plugins.gradle.org/m2/" }
+        //mavenCentral()
+        maven { url "http://maven.aliyun.com/nexus/content/repositories/central/" }
+        //jcenter()
+        maven { url "http://maven.aliyun.com/nexus/content/repositories/jcenter/" }
+        maven { url 'http://repo.spring.io/milestone' }
+        maven { url 'http://repo.spring.io/snapshot' }
+        maven { url 'http://repo.spring.io/plugins-release' }
+        maven { url 'http://repo.maven.apache.org/maven2' }
+        maven { url 'https://repository.jboss.org/nexus/content/repositories/releases' }
+        maven { url 'https://oss.sonatype.org/content/repositories/releases' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    }
+    ext {
+        spring_boot_version = '1.5.12.RELEASE'
+    }
+    dependencies {
+
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
+    }
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+
+group 'com.github.wuchao'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    //mavenCentral()
+    maven { url "http://maven.aliyun.com/nexus/content/repositories/central/" }
+    //jcenter()
+    maven { url "http://maven.aliyun.com/nexus/content/repositories/jcenter/" }
+}
+
+ext {
+    hikaricp_version = '2.6.0'
+    logstash_logback_encoder_version = '5.2'
+    lombok_version = '1.16.16'
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: 'spring-boot-starter-tomcat'
+    }
+    compile("org.springframework.boot:spring-boot-starter-undertow")
+
+    compile "mysql:mysql-connector-java"
+
+    compile("com.zaxxer:HikariCP:${hikaricp_version}") {
+        exclude(module: 'tools')
+    }
+
+    // Jackson
+    // https://github.com/FasterXML/jackson-modules-java8
+    compile "com.fasterxml.jackson.core:jackson-annotations"
+    compile "com.fasterxml.jackson.core:jackson-databind"
+    compile "com.fasterxml.jackson.module:jackson-module-afterburner:2.8.8"
+    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:2.8.8"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.8.8"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.8.8"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-hppc:2.8.8"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5:2.8.8"
+
+    compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
+
+    compile "org.projectlombok:lombok:${lombok_version}"
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+}
