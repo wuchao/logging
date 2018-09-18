@@ -42,7 +42,6 @@ repositories {
 }
 
 ext {
-    hikaricp_version = '2.6.0'
     logstash_logback_encoder_version = '5.2'
     lombok_version = '1.16.16'
 }
@@ -52,24 +51,6 @@ dependencies {
         exclude module: 'spring-boot-starter-tomcat'
     }
     compile("org.springframework.boot:spring-boot-starter-undertow")
-
-    compile "mysql:mysql-connector-java"
-
-    compile("com.zaxxer:HikariCP:${hikaricp_version}") {
-        exclude(module: 'tools')
-    }
-
-    // Jackson
-    // https://github.com/FasterXML/jackson-modules-java8
-    compile "com.fasterxml.jackson.core:jackson-annotations"
-    compile "com.fasterxml.jackson.core:jackson-databind"
-    compile "com.fasterxml.jackson.module:jackson-module-afterburner:2.8.8"
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:2.8.8"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.8.8"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.8.8"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-hppc:2.8.8"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5:2.8.8"
 
     compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
 

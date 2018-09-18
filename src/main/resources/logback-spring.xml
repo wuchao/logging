@@ -4,12 +4,12 @@
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
     <timestamp key="timestamp" datePattern="yyyy-MM-dd HH:mm:ss"/>
-    <property name="LOG_HOME" value="/var/log/web-project"/>
+    <property name="LOG_HOME" value="/var/log/logging"/>
 
-    <!--The FILE appender are here as examples for a production configuration-->
+    <!-- 日志导出的到本地 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/news/news.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -21,13 +21,13 @@
         </triggeringPolicy>
     </appender>
 
-    <!--日志导出的到 Logstash-->
-    <appender name="TCP_STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>127.0.0.1:4561</destination>
-        <!-- encoder is required -->
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-        <writeBufferSize>81920</writeBufferSize>
-    </appender>
+    <!-- 日志导出的到 Logstash -->
+    <!--<appender name="TCP_STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">-->
+        <!--<destination>127.0.0.1:4561</destination>-->
+        <!--&lt;!&ndash; encoder is required &ndash;&gt;-->
+        <!--<encoder class="net.logstash.logback.encoder.LogstashEncoder"/>-->
+        <!--<writeBufferSize>81920</writeBufferSize>-->
+    <!--</appender>-->
 
     <logger name="javax.activation" level="WARN"/>
     <logger name="javax.mail" level="WARN"/>
@@ -68,9 +68,10 @@
     </springProfile>
 
     <springProfile name="prod">
-        <logger name="com.github.wuchao.webproject.controller" level="WARN"/>
+        <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
         <root level="WARN">
-            <appender-ref ref="TCP_STASH"/>
+            <appender-ref ref="FILE"/>
+            <!--<appender-ref ref="TCP_STASH"/>-->
             <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>

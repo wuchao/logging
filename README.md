@@ -5,6 +5,7 @@
 ```
 compile "net.logstash.logback:logstash-logback-encoder:5.2"
 ```
+> 参考：[https://github.com/logstash/logstash-logback-encoder](https://github.com/logstash/logstash-logback-encoder) 
 
 配置 logback.xml
 ```
@@ -14,30 +15,8 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
 <configuration scan="true" scanPeriod="10 seconds">
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
-    <timestamp key="timestamp" datePattern="yyyy-MM-dd HH:mm:ss"/>
-    <property name="LOG_HOME" value="/var/log/web-project"/>
 
-    <!--The FILE and ASYNC appenders are here as examples for a production configuration-->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/news/news.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>7</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <charset>utf-8</charset>
-            <Pattern>%d %-5level [%thread] %logger{0}: %msg%n</Pattern>
-        </encoder>
-        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <MaxFileSize>100MB</MaxFileSize>
-        </triggeringPolicy>
-    </appender>
-
-    <!--<appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">-->
-    <!--<queueSize>512</queueSize>-->
-    <!--<appender-ref ref="FILE"/>-->
-    <!--</appender>-->
-
-    <!--日志导出的到 Logstash-->
+    <!-- 日志导出的到 Logstash -->
     <appender name="TCP_STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>127.0.0.1:4561</destination>
         <!-- encoder is required -->
@@ -83,22 +62,12 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
     <logger name="liquibase" level="WARN"/>
     <logger name="LiquibaseSchemaResolver" level="WARN"/>
     <logger name="sun.rmi.transport" level="WARN"/>
+    <logger name="com.github.wuchao.webproject.controller" level="WARN"/>
 
-    <springProfile name="dev">
-        <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
-        <root level="WARN">
-            <appender-ref ref="FILE"/>
-            <appender-ref ref="CONSOLE"/>
-        </root>
-    </springProfile>
-
-    <springProfile name="prod">
-        <logger name="com.github.wuchao.webproject.controller" level="WARN"/>
-        <root level="WARN">
-            <appender-ref ref="TCP_STASH"/>
-            <appender-ref ref="CONSOLE"/>
-        </root>
-    </springProfile>
+    <root level="WARN">
+        <appender-ref ref="TCP_STASH"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
         <resetJUL>true</resetJUL>
@@ -226,7 +195,7 @@ logstash.bat -f ../config/logstash.conf --debug
 ```
 
 
-## 安装 Kibana（v6.4.0）
+### 安装 Kibana（v6.4.0）
 > [Download Kibana](https://www.elastic.co/cn/downloads/kibana)  
 
  Kibana 解压目录下的 config/kibana.yml 配置文件中关于 ES 的配置：
@@ -239,7 +208,7 @@ elasticsearch.url: "http://127.0.0.1:9200"
 启动：运行 `bin/kibana` (or `bin\kibana.bat` on Windows)。
 
 
-## 代码测试
+### 代码测试
 ```
 package com.github.wuchao.webproject.controller;
 
@@ -301,3 +270,293 @@ public class LoggingTestController {
 日志列表左边的筛选处还可以控制显示其他日志和日志列表显示的属性。
 
 ![](./images/log-filter-menu.jpg)
+
+## 使用 filebeat 获取日志，Redis 做缓存队列
+
+
+### 安装 filebeat（v6.4.0）
+> []()
+
+下载、解压，进入解压后的文件夹，修改 `filebeat.xml` 配置文件。
+```
+#=========================== Filebeat inputs =============================
+
+filebeat.inputs:
+
+# Each - is an input. Most options can be set at the input level, so
+# you can use different inputs for various configurations.
+# Below are the input specific configurations.
+
+- type: log
+
+  # Change to true to enable this input configuration.
+  enabled: true
+
+  # Paths that should be crawled and fetched. Glob based paths.
+  paths:
+    # 在服务器部署时这样写没有获取到日志，写成 \* 这种形式就可以
+    - D:\var\log\logging\app.*.log
+    # 可以获取其它目录下的日志，写法如下
+    #- c:\programdata\elasticsearch\logs\*
+
+
+#============================= Filebeat modules ===============================
+
+filebeat.config.modules:
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+
+  # Set to true to enable config reloading
+  reload.enabled: true
+
+  # Period on which files under path should be checked for changes
+  #reload.period: 10s
+
+
+#============================= Redis output ===================================
+output.redis:
+  hosts: ["127.0.0.1"]
+  port: 6379
+  db: 2
+  index: "app-staging"
+```
+> filebeat 和 web 项目放在一个服务器上。
+
+打开 cmd，切换到 filebeat 解压目录，输入 `filebeat.exe`，回车即可。
+
+启动后 filebeat 就可以从应用服务器获取日志，保存到到 Redis，保存到 Redis 中的 key 即为配置的 “app-staging”，value 是一个 list 队列。
+> 使用以上配置的问题是 Redis 保存的日志一直增加，不会过期 参考：[redis数据库队列（list），集合（set）元素设置类似过期（expire）功能](https://blog.csdn.net/leean950806/article/details/78669070)。所以改用 kafka，Redis 也有类似 kafka 的订阅功能，但是对于大量日志的传输，还是考虑使用 kafka。
+
+filebeat 配置的是从日志文件中获取日志，所以项目中要输出日志到上面配置的日志路径中。
+```
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="true" scanPeriod="60 seconds">
+
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <timestamp key="timestamp" datePattern="yyyy-MM-dd HH:mm:ss"/>
+    <property name="LOG_HOME" value="/var/log/logging"/>
+
+    <!-- 日志导出的到本地 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>utf-8</charset>
+            <Pattern>%d %-5level [%thread] %logger{0}: %msg%n</Pattern>
+        </encoder>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>100MB</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <logger name="javax.activation" level="WARN"/>
+    <logger name="javax.mail" level="WARN"/>
+    <logger name="javax.xml.bind" level="WARN"/>
+    <logger name="ch.qos.logback" level="WARN"/>
+    <logger name="com.codahale.metrics" level="WARN"/>
+    <logger name="com.ryantenney" level="WARN"/>
+    <logger name="com.sun" level="WARN"/>
+    <logger name="com.zaxxer" level="WARN"/>
+    <logger name="io.undertow" level="WARN"/>
+    <logger name="io.undertow.websockets.jsr" level="ERROR"/>
+    <logger name="org.ehcache" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="org.apache.catalina.startup.DigesterFactory" level="OFF"/>
+    <logger name="org.bson" level="WARN"/>
+    <logger name="org.elasticsearch" level="WARN"/>
+    <logger name="org.hibernate.validator" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.web" level="DEBUG"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="org.springframework.cache" level="WARN"/>
+    <logger name="org.thymeleaf" level="WARN"/>
+    <logger name="org.xnio" level="WARN"/>
+    <logger name="springfox" level="WARN"/>
+    <logger name="sun.rmi" level="WARN"/>
+    <logger name="liquibase" level="WARN"/>
+    <logger name="LiquibaseSchemaResolver" level="WARN"/>
+    <logger name="sun.rmi.transport" level="WARN"/>
+    <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
+
+    <root level="WARN">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+</configuration>
+```
+
+### logstash 从 Redis 获取数据传输到 ES
+修改 logstash 的配置。
+```
+input {
+
+  redis {
+    data_type => "list"
+    key => "app-staging"
+    host => "localhost"
+    port => 6379
+    db => 2
+  }
+
+}
+
+output {
+
+  elasticsearch {
+    hosts => ["127.0.0.1:9200"]
+    index => "app-staging-log-%{+YYYY.MM.dd}"
+  }
+
+}
+```
+
+## 用 Kafka 替换 Redis 做缓冲队列
+
+### 安装 Kafka
+> [Quickstart](https://kafka.apache.org/quickstart)
+>
+> Windows 脚本在 bin/windows 目录下。
+
+kafka 配置文件（./config/server.properties）说明
+```
+listeners=PLAINTEXT://127.0.0.1:9092
+
+# kafka 存放数据的路径。这个路径并不是唯一的，可以是多个，路径之间只需要使用逗号分隔即可；
+# 每当创建新 partition 时，都会选择在包含最少 partitions 的路径下进行。
+log.dirs=E://Kafka//logs
+
+# 数据存储的最大时间，超过这个时间会根据 log.cleanup.policy 设置的策略处理数据
+log.retention.hours=168
+
+# Zookeeper connection string (see zookeeper docs for details).
+# This is a comma separated host:port pairs, each corresponding to a zk
+# server. e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002".
+# You can also append an optional chroot string to the urls to specify the
+# root directory for all kafka znodes.
+zookeeper.connect=localhost:2181
+```
+
+以上演示，ZooKeeper 和 Kafka 都只部署了一个节点。
+
+
+### 配置 filebeat.yml
+```
+output.kafka:
+  enabled: true
+  hosts: ["127.0.0.1:9092"]
+  topic: "test"
+  partition.hash:
+    reachable_only: true
+  compression: gzip
+  max_message_bytes: 1000000
+  required_acks: 1
+```
+
+### 配置 logstash.config
+```
+input {
+
+  kafka {
+    bootstrap_servers => "127.0.0.1:9092"
+    topics => "test"
+    consumer_threads => 1
+    decorate_events => true
+    codec => "json"
+    auto_offset_reset => "latest"
+  }
+
+}
+
+output {
+
+  elasticsearch {
+    hosts => ["127.0.0.1:9200"]
+    index => "app-staging-log-%{+YYYY.MM.dd}"
+  }
+
+}
+```
+
+多个 input 和 多个 output 的配置写法：
+```
+input {
+
+  kafka {
+    bootstrap_servers => "127.0.0.1:9092"
+    topics => "app-staging"
+    consumer_threads => 1
+    decorate_events => true
+    codec => "json"
+    auto_offset_reset => "latest"
+    type => "app-staging-kafka"
+  }
+
+  kafka {
+    bootstrap_servers => "127.0.0.1:9092"
+    topics => "app-prod"
+    consumer_threads => 1
+    decorate_events => true
+    codec => "json"
+    auto_offset_reset => "latest"
+    type => "app-prod-kafka"
+  }
+
+  redis {
+    host => "127.0.0.1"
+    port => 6379
+    password => "app-redis"
+    db => 2
+    data_type => "list"
+    key => "app-staging"
+    type => "app-staging-redis"
+  }
+
+}
+
+output {
+
+  if [type] == "app-staging-kafka" {
+    elasticsearch {
+      hosts => ["127.0.0.1:9200"]
+      index => "app-staging-log-%{+YYYY.MM.dd}"
+    }
+  }
+
+  if [type] == "app-prod-kafka" {
+    elasticsearch {
+      hosts => ["127.0.0.1:9200"]
+      index => "app-prod-log-%{+YYYY.MM.dd}"
+    }
+  }
+
+  if [type] == "app-staging-redis" {
+    elasticsearch {
+      hosts => ["127.0.0.1:9200"]
+      index => "app-staging-log-%{+YYYY.MM.dd}"
+    }
+  }
+
+}
+```
+
+启动 logstash 如果报如下错：
+```
+logstash.config.sourceloader] No configuration found in the configured sources.
+```
+则修改 `D:\ELK\logstash-6.4.0-kafka\config` 目录下的 `pipelines.yml` 配置文件如下：
+```
+- pipeline.id: another_test
+    path.config: "D:\ELK\logstash-6.4.0-kafka\config\logstash.config"
+```
+重启 logstash 即可。
+> 参考：[Multiple Pipelines doesn't seem to work with Windows OS](https://github.com/elastic/logstash/issues/9144)
