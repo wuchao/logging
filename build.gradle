@@ -15,10 +15,9 @@ buildscript {
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
     ext {
-        spring_boot_version = '1.5.12.RELEASE'
+        spring_boot_version = '1.5.9.RELEASE'
     }
     dependencies {
-
         classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
     }
 }
@@ -42,7 +41,14 @@ repositories {
 }
 
 ext {
+    commons_lang_version = '3.5'
+    commons_beanutils_version = '1.9.3'
+    log4j_version = '2.7'
     logstash_logback_encoder_version = '5.2'
+    elasticsearch_version = '6.4.0'
+    elasticsearch_client_transport_version = '6.4.0'
+    search_guard_ssl_version = '6.4.0-25.4'
+    search_guard_6_version = '6.4.0-23.0'
     lombok_version = '1.16.16'
 }
 
@@ -50,9 +56,24 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-web") {
         exclude module: 'spring-boot-starter-tomcat'
     }
-    compile("org.springframework.boot:spring-boot-starter-undertow")
+    compile "org.springframework.boot:spring-boot-starter-undertow"
+    compile "org.springframework.boot:spring-boot-starter-test"
+
+    compile "org.apache.commons:commons-lang3:${commons_lang_version}"
+    compile("commons-beanutils:commons-beanutils:${commons_beanutils_version}") {
+        exclude(module: 'commons-logging')
+    }
+
+    compile "org.apache.logging.log4j:log4j-api:${log4j_version}"
+    compile "org.apache.logging.log4j:log4j-core:${log4j_version}"
 
     compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
+    
+    compile "org.elasticsearch:elasticsearch:${elasticsearch_version}"
+    /*Transport是一个Elasticsearch JAVA客户端，Elastic获取java clientAPI，一定要与需要操作的集群的版本是一致的。*/
+    compile "org.elasticsearch.client:transport:${elasticsearch_client_transport_version}"
+    compile "com.floragunn:search-guard-ssl:${search_guard_ssl_version}"
+    compile "com.floragunn:search-guard-6:${search_guard_6_version}"
 
     compile "org.projectlombok:lombok:${lombok_version}"
 

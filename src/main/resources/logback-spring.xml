@@ -7,7 +7,7 @@
     <property name="LOG_HOME" value="/var/log/logging"/>
 
     <!-- 日志导出的到本地 -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!--<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_HOME}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>
@@ -19,15 +19,15 @@
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
             <MaxFileSize>100MB</MaxFileSize>
         </triggeringPolicy>
-    </appender>
+    </appender>-->
 
-    <!-- 日志导出的到 Logstash -->
-    <!--<appender name="TCP_STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">-->
-        <!--<destination>127.0.0.1:4561</destination>-->
-        <!--&lt;!&ndash; encoder is required &ndash;&gt;-->
-        <!--<encoder class="net.logstash.logback.encoder.LogstashEncoder"/>-->
-        <!--<writeBufferSize>81920</writeBufferSize>-->
-    <!--</appender>-->
+    <!-- 日志导的到 Logstash -->
+    <appender name="STASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <!-- 与服务器上 logstash 配置的 port 一致，且 host 为 logstash 所在服务器 -->
+        <destination>10.96.5.96:4561</destination>
+        <!-- encoder is required -->
+        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
 
     <logger name="javax.activation" level="WARN"/>
     <logger name="javax.mail" level="WARN"/>
@@ -61,18 +61,26 @@
 
     <springProfile name="dev">
         <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
+        <logger name="com.github.wuchao.webproject.WARN"></logger>
+
         <root level="WARN">
-            <appender-ref ref="FILE"/>
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="STASH_TCP"/>
         </root>
+
+        <root level="DEBUG">
+            <appender-ref ref="STASH_TCP"/>
+        </root>
+
     </springProfile>
 
     <springProfile name="prod">
         <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
         <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
             <!--<appender-ref ref="TCP_STASH"/>-->
-            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
 

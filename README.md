@@ -1,4 +1,4 @@
-
+## ELK 手动部署配置
 
 ### 配置 Logback
 添加 pom
@@ -11,67 +11,43 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
 ```
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--<configuration scan="true">-->
-<configuration scan="true" scanPeriod="10 seconds">
+<configuration scan="true" scanPeriod="60 seconds">
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <timestamp key="timestamp" datePattern="yyyy-MM-dd HH:mm:ss"/>
+    <property name="LOG_HOME" value="/var/log/logging"/>
 
-    <!-- 日志导出的到 Logstash -->
-    <appender name="TCP_STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>127.0.0.1:4561</destination>
-        <!-- encoder is required -->
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-        <!--<connectionStrategy>-->
-        <!--<roundRobin>-->
-        <!--<connectionTTL>0.5 minutes</connectionTTL>-->
-        <!--</roundRobin>-->
-        <!--</connectionStrategy>-->
-        <!-- Enable SSL using the JVM's default keystore/truststore -->
-        <!--<ssl/>-->
-        <writeBufferSize>81920</writeBufferSize>
-        <!--<keepAliveDuration>5 minutes</keepAliveDuration>
-        <reconnectionDelay>1 second</reconnectionDelay>-->
+    <!-- 日志导出的到本地 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>utf-8</charset>
+            <Pattern>%d %-5level [%thread] %logger{0}: %msg%n</Pattern>
+        </encoder>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>100MB</MaxFileSize>
+        </triggeringPolicy>
     </appender>
 
-    <logger name="javax.activation" level="WARN"/>
-    <logger name="javax.mail" level="WARN"/>
-    <logger name="javax.xml.bind" level="WARN"/>
-    <logger name="ch.qos.logback" level="WARN"/>
-    <logger name="com.codahale.metrics" level="WARN"/>
-    <logger name="com.ryantenney" level="WARN"/>
-    <logger name="com.sun" level="WARN"/>
-    <logger name="com.zaxxer" level="WARN"/>
-    <logger name="io.undertow" level="WARN"/>
-    <logger name="io.undertow.websockets.jsr" level="ERROR"/>
-    <logger name="org.ehcache" level="WARN"/>
-    <logger name="org.apache" level="WARN"/>
-    <logger name="org.apache.catalina.startup.DigesterFactory" level="OFF"/>
-    <logger name="org.bson" level="WARN"/>
-    <logger name="org.elasticsearch" level="WARN"/>
-    <logger name="org.hibernate.validator" level="WARN"/>
-    <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springframework.web" level="DEBUG"/>
-    <logger name="org.springframework.security" level="WARN"/>
-    <logger name="org.springframework.cache" level="WARN"/>
-    <logger name="org.thymeleaf" level="WARN"/>
-    <logger name="org.xnio" level="WARN"/>
-    <logger name="springfox" level="WARN"/>
-    <logger name="sun.rmi" level="WARN"/>
-    <logger name="liquibase" level="WARN"/>
-    <logger name="LiquibaseSchemaResolver" level="WARN"/>
-    <logger name="sun.rmi.transport" level="WARN"/>
-    <logger name="com.github.wuchao.webproject.controller" level="WARN"/>
+    <!-- 日志导的到 Logstash -->
+    <!--<appender name="STASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">-->
+        <!--&lt;!&ndash; 与服务器上 logstash 配置的 port 一致，且 host 为 logstash 所在服务器 &ndash;&gt;-->
+        <!--<destination>localhost:4561</destination>-->
+        <!--&lt;!&ndash; encoder is required &ndash;&gt;-->
+        <!--<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder"/>-->
+    <!--</appender>-->
+
+    ...
+    ...
+    ...
 
     <root level="WARN">
-        <appender-ref ref="TCP_STASH"/>
+        <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>
     </root>
-
-    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
-        <resetJUL>true</resetJUL>
-    </contextListener>
 
 </configuration>
 ```
@@ -194,6 +170,21 @@ logstash.bat -f ../config/logstash.conf --debug
 }
 ```
 
+#### 在 Windows 端安装 logstash 提示错误 
+输入 `logstash.bat -f ../config/logstash.conf --debug` 命令后出现以下错误
+``` 
+错误：找不到或无法加载主类 Files\Java\jdk1.7.0_80\lib;C:\Program 
+```  
+
+解决方式如下：在 logstash 安装目录中找到 `bin\logstash.bat`，打开，找到如下内容
+``` 
+%JAVA% %JAVA_OPTS% -cp %CLASSPATH% org.logstash.Logstash %*
+```
+将 %CLASSPATH% 改为 "%CLASSPATH%" 即可解决。
+
+> 参考：[logstash 启动报无法找到主类解决方案](https://www.cnblogs.com/sbj-dawn/p/8549369.html)
+
+
 
 ### 安装 Kibana（v6.4.0）
 > [Download Kibana](https://www.elastic.co/cn/downloads/kibana)  
@@ -206,6 +197,9 @@ elasticsearch.url: "http://127.0.0.1:9200"
 如果 ES 部署在其他服务器，要同步修改这里的配置
 
 启动：运行 `bin/kibana` (or `bin\kibana.bat` on Windows)。
+
+### Kibana 的汉化
+> 参考: [https://github.com/anbai-inc/Kibana_Hanization](https://github.com/anbai-inc/Kibana_Hanization) 
 
 
 ### 代码测试
@@ -227,21 +221,9 @@ public class LoggingTestController {
     @GetMapping("/elk/test")
     public ResponseEntity testELK() throws InterruptedException {
         while (true) {
-
             Thread.sleep(10000);
-
-            LOGGER.warn("Linux 内核仓库总共包含 782,487 次提交，目前有大约 19009 位开发者在维护。项目仓库大约由 61,725 个文件组成，而总共的代码行数为 25584633 行 —— 要注意还有文档，包涵诸如 Kconfig 构建文件，各种帮助程序/实用程序等这些内容。");
-
-            LOGGER.warn("再看今年的数据，到目前为止，今年已有 49,647 次提交，增加了 2,229,836 行代码，同时删除了 2,004,759 行代码。所以净增加 225,077 行代码。");
-
-            LOGGER.error("还值得关注的是，Linux 内核今年删除了一些对旧的 CPU 架构支持和内核中的其他代码，所以在添加了许多新功能的同时，由于进行了一些清理，内核并没有像人们预期的那样膨胀。另外，2017 年有 80,603 次提交，其中包括 3,911,061 次添加和 1,385,507 次删除。鉴于今年还剩下约四分之一的时间，所以像提交情况和代码行数这些数据目前可能会低于前两年。");
-
-            LOGGER.error("可以看到，Linus Torvalds 依然是最活跃的提交者，拥有了 3％ 以上的占有率。而今年对内核的其他顶级贡献者也是我们熟悉的几位：David S. Miller, Arnd Bergmann, Colin Ian King, Chris Wilson 和 Christoph Hellwig. ");
-
-            LOGGER.warn("测试异常信息打印：" + Optional.empty().get());
-
+            LOGGER.warn("logstash 采集与清洗数据到 elasticsearch 案例实战");
         }
-
     }
 
 }
@@ -271,7 +253,6 @@ public class LoggingTestController {
 
 ![](./images/log-filter-menu.jpg)
 
-## 使用 filebeat 获取日志，Redis 做缓存队列
 
 
 ### 安装 filebeat（v6.4.0）
@@ -327,75 +308,6 @@ output.redis:
 启动后 filebeat 就可以从应用服务器获取日志，保存到到 Redis，保存到 Redis 中的 key 即为配置的 “app-staging”，value 是一个 list 队列。
 > 使用以上配置的问题是 Redis 保存的日志一直增加，不会过期 参考：[redis数据库队列（list），集合（set）元素设置类似过期（expire）功能](https://blog.csdn.net/leean950806/article/details/78669070)。所以改用 kafka，Redis 也有类似 kafka 的订阅功能，但是对于大量日志的传输，还是考虑使用 kafka。
 
-filebeat 配置的是从日志文件中获取日志，所以项目中要输出日志到上面配置的日志路径中。
-```
-<?xml version="1.0" encoding="UTF-8"?>
-
-<configuration scan="true" scanPeriod="60 seconds">
-
-    <include resource="org/springframework/boot/logging/logback/base.xml"/>
-    <timestamp key="timestamp" datePattern="yyyy-MM-dd HH:mm:ss"/>
-    <property name="LOG_HOME" value="/var/log/logging"/>
-
-    <!-- 日志导出的到本地 -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>7</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <charset>utf-8</charset>
-            <Pattern>%d %-5level [%thread] %logger{0}: %msg%n</Pattern>
-        </encoder>
-        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <MaxFileSize>100MB</MaxFileSize>
-        </triggeringPolicy>
-    </appender>
-
-    <logger name="javax.activation" level="WARN"/>
-    <logger name="javax.mail" level="WARN"/>
-    <logger name="javax.xml.bind" level="WARN"/>
-    <logger name="ch.qos.logback" level="WARN"/>
-    <logger name="com.codahale.metrics" level="WARN"/>
-    <logger name="com.ryantenney" level="WARN"/>
-    <logger name="com.sun" level="WARN"/>
-    <logger name="com.zaxxer" level="WARN"/>
-    <logger name="io.undertow" level="WARN"/>
-    <logger name="io.undertow.websockets.jsr" level="ERROR"/>
-    <logger name="org.ehcache" level="WARN"/>
-    <logger name="org.apache" level="WARN"/>
-    <logger name="org.apache.catalina.startup.DigesterFactory" level="OFF"/>
-    <logger name="org.bson" level="WARN"/>
-    <logger name="org.elasticsearch" level="WARN"/>
-    <logger name="org.hibernate.validator" level="WARN"/>
-    <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springframework.web" level="DEBUG"/>
-    <logger name="org.springframework.security" level="WARN"/>
-    <logger name="org.springframework.cache" level="WARN"/>
-    <logger name="org.thymeleaf" level="WARN"/>
-    <logger name="org.xnio" level="WARN"/>
-    <logger name="springfox" level="WARN"/>
-    <logger name="sun.rmi" level="WARN"/>
-    <logger name="liquibase" level="WARN"/>
-    <logger name="LiquibaseSchemaResolver" level="WARN"/>
-    <logger name="sun.rmi.transport" level="WARN"/>
-    <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
-
-    <root level="WARN">
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="CONSOLE"/>
-    </root>
-
-    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
-        <resetJUL>true</resetJUL>
-    </contextListener>
-
-</configuration>
-```
-
-### logstash 从 Redis 获取数据传输到 ES
 修改 logstash 的配置。
 ```
 input {
@@ -411,7 +323,7 @@ input {
 }
 
 output {
-
+  # 从 Redis 获取数据传输到 ES
   elasticsearch {
     hosts => ["127.0.0.1:9200"]
     index => "app-staging-log-%{+YYYY.MM.dd}"
@@ -419,10 +331,10 @@ output {
 
 }
 ```
+> 参考：使用 filebeat 获取日志，Redis 做缓存队列（[ELK之filebeat详解](https://www.ixdba.net/archives/2018/01/1111.htm)）
 
-## 用 Kafka 替换 Redis 做缓冲队列
 
-### 安装 Kafka
+### 安装 Kafka（用 Kafka 替换 Redis 做缓冲队列）
 > [Quickstart](https://kafka.apache.org/quickstart)
 >
 > Windows 脚本在 bin/windows 目录下。
@@ -449,7 +361,25 @@ zookeeper.connect=localhost:2181
 以上演示，ZooKeeper 和 Kafka 都只部署了一个节点。
 
 
-### 配置 filebeat.yml
+#### 在 Windows 端安装 kafka 提示错误 
+输入 `kafka-server-start.bat ../../config/server.properties` 命令后出现以下错误
+``` 
+错误：找不到或无法加载主类 Files\Java\jdk1.7.0_80\lib;C:\Program 
+```  
+
+解决方式如下：在 kafka 安装目录中找到 bin\windows 目录中的 `kafka-run-class.bat` ，打开，找到如下内容
+``` 
+set COMMAND=%JAVA% %KAFKA_HEAP_OPTS% %KAFKA_JVM_PERFORMANCE_OPTS% %KAFKA_JMX_OPTS% %KAFKA_LOG4J_OPTS% -cp %CLASSPATH% %KAFKA_OPTS% %*
+```
+为 %CLASSPATH% 加上双引号，
+``` 
+set COMMAND=%JAVA% %KAFKA_HEAP_OPTS% %KAFKA_JVM_PERFORMANCE_OPTS% %KAFKA_JMX_OPTS% %KAFKA_LOG4J_OPTS% -cp "%CLASSPATH%" %KAFKA_OPTS% %*
+``` 
+
+> 参考：[在Windows端安装kafka 提示错误: 找不到或无法加载主类 的解决方案](https://blog.csdn.net/u012931508/article/details/55211390)
+
+
+配置 filebeat.yml：
 ```
 output.kafka:
   enabled: true
@@ -462,7 +392,7 @@ output.kafka:
   required_acks: 1
 ```
 
-### 配置 logstash.config
+配置 logstash.config：
 ```
 input {
 
@@ -490,6 +420,13 @@ output {
 多个 input 和 多个 output 的配置写法：
 ```
 input {
+
+  tcp {
+    host => "127.0.0.1"
+    port => 4561
+    codec => "json"
+    type => "dam-staging-tcp"
+  }
 
   kafka {
     bootstrap_servers => "127.0.0.1:9092"
@@ -523,7 +460,27 @@ input {
 
 }
 
+filter {
+  grok {
+    match => {
+      "message" => [
+        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:module}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}<->%{GREEDYDATA:json}",
+        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:moudle}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}"
+      ]
+    }
+    remove_field => "message"
+  }
+}
+
 output {
+
+  if [type] == "dam-staging-tcp" {
+    elasticsearch {
+      hosts => ["127.0.0.1:9200"]
+      // ElasticSearch 索引形式
+      index => "app-staging-tcp-%{+YYYY.MM.dd}"
+    }
+  }
 
   if [type] == "app-staging-kafka" {
     elasticsearch {
@@ -548,6 +505,7 @@ output {
 
 }
 ```
+> [logstash grok 分割匹配日志](https://www.cnblogs.com/shantu/p/4598875.html)
 
 启动 logstash 如果报如下错：
 ```
@@ -560,3 +518,6 @@ logstash.config.sourceloader] No configuration found in the configured sources.
 ```
 重启 logstash 即可。
 > 参考：[Multiple Pipelines doesn't seem to work with Windows OS](https://github.com/elastic/logstash/issues/9144)
+
+
+## ELK Docker 部署配置
