@@ -24,7 +24,7 @@
     <!-- 日志导的到 Logstash -->
     <appender name="STASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <!-- 与服务器上 logstash 配置的 port 一致，且 host 为 logstash 所在服务器 -->
-        <destination>10.96.5.96:4561</destination>
+        <destination>127.0.0.1:4561</destination>
         <!-- encoder is required -->
         <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
@@ -43,7 +43,6 @@
     <logger name="org.apache" level="WARN"/>
     <logger name="org.apache.catalina.startup.DigesterFactory" level="OFF"/>
     <logger name="org.bson" level="WARN"/>
-    <logger name="org.elasticsearch" level="WARN"/>
     <logger name="org.hibernate.validator" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
     <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
@@ -58,8 +57,9 @@
     <logger name="liquibase" level="WARN"/>
     <logger name="LiquibaseSchemaResolver" level="WARN"/>
     <logger name="sun.rmi.transport" level="WARN"/>
+    <logger name="org.elasticsearch" level="WARN"/>
 
-    <springProfile name="dev">
+    <springProfile name="dev,test">
         <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
         <logger name="com.github.wuchao.webproject.WARN"></logger>
 

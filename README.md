@@ -425,7 +425,7 @@ input {
     host => "127.0.0.1"
     port => 4561
     codec => "json"
-    type => "dam-staging-tcp"
+    type => "app-staging-tcp"
   }
 
   kafka {
@@ -474,7 +474,7 @@ filter {
 
 output {
 
-  if [type] == "dam-staging-tcp" {
+  if [type] == "app-staging-tcp" {
     elasticsearch {
       hosts => ["127.0.0.1:9200"]
       // ElasticSearch 索引形式
