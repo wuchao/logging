@@ -51,6 +51,7 @@ public class ElasticSearchService {
      * 根据索引和 QueryBuilder 查询 ES 保存的数据
      *
      * @param index
+     * @param type
      * @param builder
      * @param orderField
      * @param order
@@ -58,6 +59,7 @@ public class ElasticSearchService {
      * @return
      */
     public SearchResponse findByIndexAndQueryBuilder(final String index,
+                                                     final String type,
                                                      final QueryBuilder builder,
                                                      final String orderField,
                                                      final SortOrder order,
@@ -65,6 +67,7 @@ public class ElasticSearchService {
 
         SearchRequestBuilder searchRequestBuilder = transportClient
                 .prepareSearch(index)
+                .setTypes(type)
                 .addSort(orderField, order)
                 .setSize(size)
                 .setQuery(builder);
