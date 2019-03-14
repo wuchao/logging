@@ -417,7 +417,7 @@ output {
 }
 ```
 
-多个 input 和 多个 output 的配置写法：
+多个 input 和 多个 output 的配置写法（下面的注释语法可能不正确，只是为了说明加上去的）：
 ```
 input {
 
@@ -460,15 +460,24 @@ input {
 
 }
 
+// %{GREEDYDATA:[@metadata][mes]} 为了匹配其它所有不满足条件的日志，并且将这些不满足条件的日志的 logType 设置成 other
 filter {
   grok {
     match => {
       "message" => [
         "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:module}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}<->%{GREEDYDATA:json}",
-        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:moudle}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}"
+        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:moudle}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}",
+        "%{DATA:logType}\:%{GREEDYDATA:exception}",
+        "%{GREEDYDATA:[@metadata][mes]}"
       ]
     }
-    remove_field => "message"
+    // remove_field => "message"
+  }
+
+  if [logType] not in ["userLog", "jetcacheLog"] {
+    mutate {
+      replace => {"logType" => "other"}
+    }
   }
 }
 
