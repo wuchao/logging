@@ -58,6 +58,12 @@ dependencies {
     }
     compile "org.springframework.boot:spring-boot-starter-undertow"
     compile "org.springframework.boot:spring-boot-starter-test"
+    compile "org.springframework.boot:spring-boot-starter-data-elasticsearch"
+    compile "com.sun.jna:jna:3.0.9"
+    compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
+//    compile "org.elasticsearch:elasticsearch:${elasticsearch_version}"
+//    /*Transport是一个Elasticsearch JAVA客户端，Elastic获取java clientAPI，一定要与需要操作的集群的版本是一致的。*/
+//    compile "org.elasticsearch.client:transport:${elasticsearch_client_transport_version}"
 
     compile "org.apache.commons:commons-lang3:${commons_lang_version}"
     compile("commons-beanutils:commons-beanutils:${commons_beanutils_version}") {
@@ -67,13 +73,15 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-api:${log4j_version}"
     compile "org.apache.logging.log4j:log4j-core:${log4j_version}"
 
-    compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
-    
-    compile "org.elasticsearch:elasticsearch:${elasticsearch_version}"
-    /*Transport是一个Elasticsearch JAVA客户端，Elastic获取java clientAPI，一定要与需要操作的集群的版本是一致的。*/
-    compile "org.elasticsearch.client:transport:${elasticsearch_client_transport_version}"
-    compile "com.floragunn:search-guard-ssl:${search_guard_ssl_version}"
-    compile "com.floragunn:search-guard-6:${search_guard_6_version}"
+    compile "com.google.guava:guava:21.0"
+//    compile "com.floragunn:search-guard-ssl:${search_guard_ssl_version}"
+//    compile "com.floragunn:search-guard-6:${search_guard_6_version}"
+
+
+    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:2.6.6"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.6"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.6"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.6"
 
     compile "org.projectlombok:lombok:${lombok_version}"
 

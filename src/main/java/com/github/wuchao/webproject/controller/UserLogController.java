@@ -1,5 +1,6 @@
-package com.github.wuchao.webproject.service;
+package com.github.wuchao.webproject.controller;
 
+import com.github.wuchao.webproject.service.ElasticSearchService;
 import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.search.SearchResponse;
@@ -7,41 +8,24 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@SpringBootTest
-@RunWith(SpringRunner.class)
-@ActiveProfiles(value = {"test"})
-public class ElasticSearchServiceTests {
+@RestController
+@RequestMapping("/api")
+public class UserLogController {
 
     @Autowired
     private ElasticSearchService elasticSearchService;
 
-    @Test
-    public void testDeleteIndices() {
-        elasticSearchService.deleteIndices("app-staging", 3);
-    }
-
-    @Test
-    public void testSearchIndices() {
-        Map<String, IndexStats> indices = elasticSearchService.searchIndices("app-staging-tcp");
-        if (MapUtils.isNotEmpty(indices)) {
-            indices.forEach((key, value) -> {
-                System.out.println(key + " : " + value);
-            });
-        }
-    }
-
-    @Test
+    @GetMapping("/findByIndex")
     public void testFindByIndex() {
-        Map<String, IndexStats> indices = elasticSearchService.searchIndices("app-staging-tcp");
+        Map<String, IndexStats> indices;
+        indices = elasticSearchService.searchIndices("user-staging-tcp");
         if (MapUtils.isNotEmpty(indices)) {
             // 词条查询时未经分析的，因此需要提供跟索引文档中的词条完全匹配的词条
             // 索引在建立时，userLog 会变成 userlog
@@ -56,5 +40,4 @@ public class ElasticSearchServiceTests {
             });
         }
     }
-
 }

@@ -9,13 +9,15 @@ import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,15 +37,20 @@ public class ElasticSearchService {
     @Value("${elasticsearch.cluster.host}")
     private String elasticsearchClusterHost;
 
-    private TransportClient transportClient;
+    private Client transportClient;
 
-    private AdminClient adminClient = null;
+    private AdminClient adminClient;
 
     @PostConstruct
     public void init() throws UnknownHostException {
-        Settings settings = Settings.builder().put("cluster.name", elasticsearchClusterName).build();
-        transportClient = new PreBuiltTransportClient(settings)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9300));
+        Settings settings = Settings.builder()
+                .put("cluster.name", elasticsearchClusterName)
+                .build();
+        transportClient = TransportClient.builder()
+                .settings(settings)
+                .build()
+                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9300))
+                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9301));
         adminClient = transportClient.admin();
     }
 
@@ -175,5 +182,4 @@ public class ElasticSearchService {
         c.set(Calendar.DATE, c.get(Calendar.DATE) - num);
         return new SimpleDateFormat("yyyy.MM.dd").format(c.getTime());
     }
-
 }
