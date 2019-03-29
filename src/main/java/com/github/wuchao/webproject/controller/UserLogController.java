@@ -25,12 +25,13 @@ public class UserLogController {
     @GetMapping("/findByIndex")
     public void testFindByIndex() {
         Map<String, IndexStats> indices;
-        indices = elasticSearchService.searchIndices("user-staging-tcp");
+        indices = elasticSearchService.searchIndices("app-staging-tcp");
         if (MapUtils.isNotEmpty(indices)) {
             // 词条查询时未经分析的，因此需要提供跟索引文档中的词条完全匹配的词条
             // 索引在建立时，userLog 会变成 userlog
             TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("logType", "userlog");
             indices.forEach((key, value) -> {
+                System.out.println("----------------------------------------");
                 SearchResponse searchResponse = elasticSearchService
                         .findByIndexAndQueryBuilder(key, "doc", termQueryBuilder, "@timestamp", SortOrder.DESC, 20);
                 SearchHits searchHits = searchResponse.getHits();
