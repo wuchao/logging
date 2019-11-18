@@ -26,18 +26,26 @@ public class LoggingJob implements CommandLineRunner {
                 log.warn("logstash 采集与清洗数据到 elasticsearch 案例实战");
 
             } else if (netInt == 1) {
-                // 用户-模块-方法-动作-操作描述
-                log.debug("userLog:{}<->{}<->{}<->{}<->{}",
-                        "wuc",
+                // 用户(账号)<->用户名<->用户 IP <->模块<->方法<->操作描述
+                log.debug("userLog:{}<->{}<->{}<->{}<->{}<->{}",
+                        "test_001",
+                        "张三",
+                        "127.0.0.1",
                         "AccountResource",
-                        "createAccount",
-                        "创建",
-                        "创建用户基本信息");
+                        "getAccount",
+                        "查看用户当前信息");
 
             } else if (netInt == 2) {
-                // 用户(账号)<->模块<->方法<->动作<->操作描述<->涉及大坝<->实体Class名称<->实体Json
-                log.debug("userLog:test_kongh<->AccountResource(用户账户管理)<->getAccount<->浏览<->查看用户当前信息<->none<->com.aaa.bbb.service.user.dto.UserDTO<->{\"id\":1908,\"login\":\"test_xxx\",\"firstName\":\"张三\",\"lastName\":null}");
-
+                // 用户(账号)<->用户名<->用户 IP <->模块<->方法<->操作描述<->DTO Class 名称<->DTO json
+                log.debug("userLog:{}<->{}<->{}<->{}<->{}<->{}<->{}<->{}",
+                        "test_001",
+                        "张三",
+                        "127.0.0.1",
+                        "AccountResource",
+                        "createAccount",
+                        "创建用户基本信息",
+                        "com.aaa.bbb.service.user.dto.UserDTO",
+                        "{\\\"login\\\":\\\"test_002\\\",\\\"firstName\\\":\\\"李四\\\",\\\"lastName\\\":null}\"");
             }
 
             if (System.currentTimeMillis() - startTime >= 1000 * 60 * 30) {
