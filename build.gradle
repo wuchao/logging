@@ -1,11 +1,9 @@
 buildscript {
     repositories {
         mavenLocal()
-        maven { url "https://plugins.gradle.org/m2/" }
-        //mavenCentral()
         maven { url "http://maven.aliyun.com/nexus/content/repositories/central/" }
-        //jcenter()
         maven { url "http://maven.aliyun.com/nexus/content/repositories/jcenter/" }
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url 'http://repo.spring.io/milestone' }
         maven { url 'http://repo.spring.io/snapshot' }
         maven { url 'http://repo.spring.io/plugins-release' }
@@ -14,11 +12,19 @@ buildscript {
         maven { url 'https://oss.sonatype.org/content/repositories/releases' }
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
-    ext {
-        spring_boot_version = '1.5.9.RELEASE'
-    }
+
     dependencies {
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
+        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.5.1"
+        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.5"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${spring_boot_version}"
+        classpath "org.springframework.build.gradle:propdeps-plugin:0.0.7"
+        classpath "com.moowork.gradle:gradle-node-plugin:1.1.1"
+        classpath "io.spring.gradle:dependency-management-plugin:0.6.1.RELEASE"
+        //jhipster-needle-gradle-buildscript-dependency - JHipster will add additional gradle build script plugins here
+        classpath("gradle.plugin.org.liquibase:liquibase-gradle-plugin:2.0.0") {
+            exclude(module: 'liquibase-core')
+        }
+        classpath "org.liquibase:liquibase-core:3.4.0"
     }
 }
 
@@ -26,6 +32,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
 
 group 'com.github.wuchao'
 version '1.0-SNAPSHOT'
@@ -55,16 +62,17 @@ ext {
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web") {
         exclude module: 'spring-boot-starter-tomcat'
+        exclude module: 'logback-classic'
     }
-    compile "org.springframework.boot:spring-boot-starter-undertow"
+    compile("org.springframework.boot:spring-boot-starter-undertow")
     compile "org.springframework.boot:spring-boot-starter-test"
-    // elasticsearch 版本为 2.4.4，服务器也要安装 2.4.4 版本的 elasticsearch
-    compile "org.springframework.boot:spring-boot-starter-data-elasticsearch"
-    compile "com.sun.jna:jna:3.0.9"
-    compile "net.logstash.logback:logstash-logback-encoder:${logstash_logback_encoder_version}"
-//    compile "org.elasticsearch:elasticsearch:${elasticsearch_version}"
-//    /*Transport是一个Elasticsearch JAVA客户端，Elastic获取java clientAPI，一定要与需要操作的集群的版本是一致的。*/
-//    compile "org.elasticsearch.client:transport:${elasticsearch_client_transport_version}"
+
+    compile "org.elasticsearch:elasticsearch:6.5.0"
+    compile("org.elasticsearch.client:transport:6.5.0") {
+        exclude group: 'org.elasticsearch.plugin', module: 'transport-netty4-client'
+    }
+    compile 'org.elasticsearch.plugin:transport-netty4-client:6.5.0'
+    compile "net.logstash.logback:logstash-logback-encoder:5.2"
 
     compile "org.apache.commons:commons-lang3:${commons_lang_version}"
     compile("commons-beanutils:commons-beanutils:${commons_beanutils_version}") {
@@ -74,15 +82,15 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-api:${log4j_version}"
     compile "org.apache.logging.log4j:log4j-core:${log4j_version}"
 
+    compile "com.sun.jna:jna:3.0.9"
     compile "com.google.guava:guava:21.0"
-//    compile "com.floragunn:search-guard-ssl:${search_guard_ssl_version}"
-//    compile "com.floragunn:search-guard-6:${search_guard_6_version}"
 
-
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:2.6.6"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.6"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.6"
-    compile "com.fasterxml.jackson.core:jackson-databind:2.6.6"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
+    compile "com.fasterxml.jackson.core:jackson-annotations"
+    compile "com.fasterxml.jackson.core:jackson-databind"
+    compile "com.fasterxml.jackson.module:jackson-module-afterburner"
 
     compile "org.projectlombok:lombok:${lombok_version}"
 

@@ -3,21 +3,19 @@ package com.github.wuchao.webproject.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.AdminClient;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +27,7 @@ import java.util.*;
 
 @Slf4j
 @Service
-public class ElasticSearchService {
+public class ElasticTransportClientService {
 
     @Value("${elasticsearch.cluster.name}")
     private String elasticsearchClusterName;
@@ -37,7 +35,7 @@ public class ElasticSearchService {
     @Value("${elasticsearch.cluster.host}")
     private String elasticsearchClusterHost;
 
-    private Client transportClient;
+    private TransportClient transportClient;
 
     private AdminClient adminClient;
 
@@ -45,12 +43,12 @@ public class ElasticSearchService {
     public void init() throws UnknownHostException {
         Settings settings = Settings.builder()
                 .put("cluster.name", elasticsearchClusterName)
+                // 自动嗅探整个集群的状态，把集群中其它 ES 节点的 IP 添加到本地的客户端列表中
+                .put("client.transport.sniff", true)
                 .build();
-        transportClient = TransportClient.builder()
-                .settings(settings)
-                .build()
-                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9300))
-                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9301));
+        transportClient = new PreBuiltTransportClient(settings)
+                // 添加 IP，至少一个，其实一个就够了，因为添加了自动嗅探配置
+                .addTransportAddress(new TransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9300));
         adminClient = transportClient.admin();
     }
 
@@ -79,6 +77,9 @@ public class ElasticSearchService {
                 .setSize(size)
                 .setQuery(builder);
         return searchRequestBuilder.execute().actionGet(30000);
+
+//        OpenIndexRequest request = new OpenIndexRequest(index);
+//        request.timeout(TimeValue.timeValueMillis(30000));
     }
 
     /**
@@ -151,7 +152,7 @@ public class ElasticSearchService {
     public void delete(List<String> indices) {
         if (CollectionUtils.isNotEmpty(indices)) {
             IndicesAdminClient indicesAdminClient = adminClient.indices();
-            DeleteIndexResponse response;
+            AcknowledgedResponse response;
             for (String s : indices) {
                 response = indicesAdminClient.prepareDelete(s).execute().actionGet();
                 log.debug("删除索引 " + s + " " + response.isAcknowledged());

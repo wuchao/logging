@@ -1,6 +1,6 @@
 ## Windows 服务器配置 ELK
 
-ELK 是 Elasticsearch、Logstash、Kibana 三大开源框架首字母大写简称。市面上也被成为 Elastic Stack。部署时，这三个框架的版本相互要匹配，并且也要和项目中使用的 spring data elasticsearch 框架的版本相匹配（下面示例的版本是 6.4.0，不代表项目中实际使用的版本）。
+ELK 是 Elasticsearch、Logstash、Kibana 三大开源框架首字母大写简称，也被成为 Elastic Stack。部署时，这三个框架的版本相互要匹配，并且也要和项目中使用的 spring-data-elasticsearch、elasticsearch 依赖的版本相匹配。
 
 spring data elasticsearch 对应 elasticsearch 版本：
 
@@ -13,16 +13,68 @@ spring data elasticsearch 对应 elasticsearch 版本：
 |           2.0.x           |     2.2.0     |
 |           1.3.x           |     1.5.2     |
 
+下面是一个可行的依赖配置（spring-boot 版本是：2.0.5.RELEASE，服务器部署的 ELK 版本是：6.5.0）：
+> [ElasticSearch6.5.0【Java客户端之TransportClient】](https://www.cnblogs.com/LUA123/p/9967638.html#top)
+
+##### 1. 使用 RestHighLevelClient
+依赖：
+``` 
+compile "org.springframework.data:spring-data-elasticsearch:3.2.2.RELEASE"
+compile "org.elasticsearch:elasticsearch:6.5.0"
+compile "net.logstash.logback:logstash-logback-encoder:5.2"
+``` 
+
+初始化：
+``` 
+// RestHighLevelClient client;
+```
+
+##### 2. 使用 TransportClient
+依赖：
+```
+compile "org.elasticsearch:elasticsearch:6.5.0"
+compile("org.elasticsearch.client:transport:6.5.0") {
+    exclude group: 'org.elasticsearch.plugin', module: 'transport-netty4-client'
+}
+compile 'org.elasticsearch.plugin:transport-netty4-client:6.5.0'
+compile "net.logstash.logback:logstash-logback-encoder:5.2"
+```
+
+初始化：
+``` 
+@Value("${elasticsearch.cluster.name}")
+private String elasticsearchClusterName;
+
+@Value("${elasticsearch.cluster.host}")
+private String elasticsearchClusterHost;
+
+private TransportClient transportClient;
+
+private AdminClient adminClient;
+
+@PostConstruct
+public void init() throws UnknownHostException {
+    Settings settings = Settings.builder()
+            .put("cluster.name", elasticsearchClusterName)
+            // 自动嗅探整个集群的状态，把集群中其他 ES 节点的 IP 添加到本地的客户端列表中
+            .put("client.transport.sniff", true)
+            .build();
+    transportClient = new PreBuiltTransportClient(settings)
+            // 添加 IP，至少一个，其实一个就够了，因为添加了自动嗅探配置
+            .addTransportAddress(new TransportAddress(InetAddress.getByName(elasticsearchClusterHost), 9300));
+    adminClient = transportClient.admin();
+}
+```
+
+启动如果遇到下面异常：
+ ```
+Failed to instantiate [org.elasticsearch.client.transport.TransportClient]: Factory method 'elasticsearchClient' threw exception; nested exception is java.lang.IllegalStateException: availableProcessors is already set to [4], rejecting [4]
+```
+参考 [elasticsearch5.6.1.集成springboot 遇到的坑](https://blog.csdn.net/sinat_29899265/article/details/81772037) 解决方法。
+
 > 实际部署时，视情况将下面示例中的 localhost 和 localhost 改成实际的服务器 IP 地址。
 
 ### 项目里面配置 Logback 日志输出
-
-添加依赖
-
-```
-compile "org.springframework.boot:spring-boot-starter-data-elasticsearch"
-compile "net.logstash.logback:logstash-logback-encoder:5.2"
-```
 
 > 参考：[https://github.com/logstash/logstash-logback-encoder](https://github.com/logstash/logstash-logback-encoder)
 
@@ -110,7 +162,7 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
 </configuration>
 ```
 
-### 安装 ElasticSearch（v6.4.0）
+### 安装 ElasticSearch（v6.5.0）
 
 > [Download Elasticsearch](https://www.elastic.co/cn/downloads/elasticsearch)
 
@@ -120,17 +172,17 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
 
 ```
 {
-  "name" : "Tgf8YPO",
+  "name" : "Zyx4P_V",
   "cluster_name" : "elasticsearch",
-  "cluster_uuid" : "61LwqYhdQnaWU_zMoZ3BIw",
+  "cluster_uuid" : "HwFA-_3wRXGz9Epx3IOsFQ",
   "version" : {
-    "number" : "6.4.0",
+    "number" : "6.5.0",
     "build_flavor" : "default",
     "build_type" : "zip",
-    "build_hash" : "595516e",
-    "build_date" : "2018-08-17T23:18:47.308994Z",
+    "build_hash" : "816e6f6",
+    "build_date" : "2018-11-09T18:58:36.352602Z",
     "build_snapshot" : false,
-    "lucene_version" : "7.4.0",
+    "lucene_version" : "7.5.0",
     "minimum_wire_compatibility_version" : "5.6.0",
     "minimum_index_compatibility_version" : "5.0.0"
   },
@@ -143,26 +195,26 @@ compile "net.logstash.logback:logstash-logback-encoder:5.2"
 ```
 {
   "cluster_name" : "elasticsearch",
-  "status" : "green",
+  "status" : "yellow",
   "timed_out" : false,
   "number_of_nodes" : 1,
   "number_of_data_nodes" : 1,
-  "active_primary_shards" : 1,
-  "active_shards" : 1,
+  "active_primary_shards" : 6,
+  "active_shards" : 6,
   "relocating_shards" : 0,
   "initializing_shards" : 0,
-  "unassigned_shards" : 0,
+  "unassigned_shards" : 5,
   "delayed_unassigned_shards" : 0,
   "number_of_pending_tasks" : 0,
   "number_of_in_flight_fetch" : 0,
   "task_max_waiting_in_queue_millis" : 0,
-  "active_shards_percent_as_number" : 100.0
+  "active_shards_percent_as_number" : 54.54545454545454
 }
 ```
 
 查看 elasticsearch 索引信息： `http://127.0.0.1:9200/_cat/indices?v`。
 
-### 安装 Logstash（v6.4.0）
+### 安装 Logstash（v6.5.0）
 
 > [Download Logstash](https://www.elastic.co/cn/downloads/logstash)
 
@@ -256,8 +308,8 @@ filter {
   grok {
     match => {
       "message" => [
-        "%{DATA:logType}\:%{GREEDYDATA:loginName}<->%{GREEDYDATA:displayName}<->%{IP:userIP}<->%{GREEDYDATA:module}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}<->%{GREEDYDATA:class}"<->%{GREEDYDATA:json}",
-        "%{DATA:logType}\:%{GREEDYDATA:loginName}<->%{GREEDYDATA:displayName}<->%{IP:userIP}<->%{GREEDYDATA:moudle}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}",
+        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:module}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}<->%{GREEDYDATA:json}",
+        "%{DATA:logType}\:%{GREEDYDATA:user}<->%{GREEDYDATA:moudle}<->%{GREEDYDATA:method}<->%{GREEDYDATA:action}<->%{GREEDYDATA:description}",
         "%{DATA:logType}\:%{GREEDYDATA:exception}",
         "%{GREEDYDATA:[@metadata][mes]}"
       ]
@@ -319,12 +371,12 @@ logstash.bat -f ../config/logstash.conf --debug
 ```
 {
   "host" : "PC180495",
-  "version" : "6.4.0",
+  "version" : "6.5.0",
   "http_address" : "127.0.0.1:9601",
-  "id" : "ccc983f2-a650-4892-adb8-d6622918a771",
+  "id" : "febb58dd-cadd-4050-9510-5229ff1cc0d5",
   "name" : "PC180495",
-  "build_date" : "2018-08-18T00:25:22Z",
-  "build_sha" : "f8014ac54e6c8ff6c071c0960ca1b00e9735f43a",
+  "build_date" : "2018-11-09T19:43:40+00:00",
+  "build_sha" : "4b3a404d6751261d155458c1a8454a22167b1954",
   "build_snapshot" : false
 }
 ```
@@ -353,11 +405,11 @@ logstash.bat -f ../config/logstash.conf --debug
 logstash.config.sourceloader] No configuration found in the configured sources.
 ```
 
-则修改 `D:\ELK\logstash-6.4.0-kafka\config` 目录下的 `pipelines.yml` 配置文件如下：
+则修改 `D:\ELK\logstash-6.5.0-kafka\config` 目录下的 `pipelines.yml` 配置文件如下：
 
 ```
 - pipeline.id: another_test
-    path.config: "D:\ELK\logstash-6.4.0-kafka\config\logstash.config"
+    path.config: "D:\ELK\logstash-6.5.0-kafka\config\logstash.config"
 ```
 
 重启 logstash 即可。
@@ -414,7 +466,7 @@ set COMMAND=%JAVA% %KAFKA_HEAP_OPTS% %KAFKA_JVM_PERFORMANCE_OPTS% %KAFKA_JMX_OPT
 
 > 参考：[在 Windows 端安装 kafka 提示错误: 找不到或无法加载主类 的解决方案](https://blog.csdn.net/u012931508/article/details/55211390)
 
-### 安装 Kibana（v6.4.0）
+### 安装 Kibana（v6.5.0）
 
 > [Download Kibana](https://www.elastic.co/cn/downloads/kibana)
 
@@ -450,6 +502,9 @@ public class LoggingTestController {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LoggingTestController.class);
 
+    /**
+     * 生成日志测试
+     */
     @GetMapping("/elk/test")
     public ResponseEntity testELK() throws InterruptedException {
         while (true) {
