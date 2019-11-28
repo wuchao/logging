@@ -36,7 +36,7 @@ public class UserLogController {
                         .findByIndexAndQueryBuilder(key, "doc", termQueryBuilder, "@timestamp", SortOrder.DESC, 20);
                 SearchHits searchHits = searchResponse.getHits();
                 searchHits.forEach(hit -> {
-                    System.out.println(hit.getSource());
+                    System.out.println(hit.getSourceAsMap());
                 });
             });
         }
