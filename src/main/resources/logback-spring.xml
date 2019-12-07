@@ -60,8 +60,8 @@
     <logger name="org.elasticsearch" level="WARN"/>
 
     <springProfile name="dev,test">
-        <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
-        <logger name="com.github.wuchao.webproject.WARN"></logger>
+        <logger name="com.github.wuchao.logging.controller" level="DEBUG"/>
+        <logger name="com.github.wuchao.logging.WARN"></logger>
 
         <root level="WARN">
             <appender-ref ref="CONSOLE"/>
@@ -76,7 +76,7 @@
     </springProfile>
 
     <springProfile name="prod">
-        <logger name="com.github.wuchao.webproject.controller" level="DEBUG"/>
+        <logger name="com.github.wuchao.logging.controller" level="DEBUG"/>
         <root level="WARN">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>

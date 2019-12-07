@@ -1,6 +1,6 @@
-package com.github.wuchao.webproject.controller;
+package com.github.wuchao.logging.controller;
 
-import com.github.wuchao.webproject.service.ElasticTransportClientService;
+import com.github.wuchao.logging.service.ElasticTransportClientService;
 import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.search.SearchResponse;

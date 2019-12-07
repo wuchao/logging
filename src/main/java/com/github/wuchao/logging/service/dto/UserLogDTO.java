@@ -1,4 +1,4 @@
-package com.github.wuchao.webproject.service.dto;
+package com.github.wuchao.logging.service.dto;
 
 import lombok.Data;
 

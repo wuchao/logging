@@ -1,4 +1,4 @@
-package com.github.wuchao.webproject.service;
+package com.github.wuchao.logging.service;
 
 import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;

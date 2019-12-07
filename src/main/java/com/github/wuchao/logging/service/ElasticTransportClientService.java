@@ -1,4 +1,4 @@
-package com.github.wuchao.webproject.service;
+package com.github.wuchao.logging.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;

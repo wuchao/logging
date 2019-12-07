@@ -488,7 +488,7 @@ elasticsearch.url: "http://127.0.0.1:9200"
 ### 代码测试
 
 ```
-package com.github.wuchao.webproject.controller;
+package com.github.wuchao.logging.controller;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;

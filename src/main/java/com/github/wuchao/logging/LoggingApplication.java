@@ -1,4 +1,4 @@
-package com.github.wuchao.webproject;
+package com.github.wuchao.logging;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
